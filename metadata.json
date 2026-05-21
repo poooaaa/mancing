@@ -1,6 +1,6 @@
 {
-  "name": "Aesthetic Minimal",
-  "description": "A layout featuring a bottom-docked image with a smooth top fade mask.",
+  "name": "OpusEvent | FishIts",
+  "description": "A fishing game where you build collections and compete for power.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
