@@ -142,8 +142,8 @@ const generateInitialFishes = (): ActiveFishType[] => {
   return fishes;
 };
 
-function Fish({ data, hookState, onCatch }: { data: ActiveFishType, hookState: React.MutableRefObject<any>, onCatch: (id: number, src: string, caughtWidth: number, rtl: boolean, power: number) => void }) {
-  const ref = useRef<HTMLImageElement>(null);
+function Fish({ data, hookState, onCatch, onComplete }: { data: ActiveFishType, hookState: React.MutableRefObject<any>, onCatch: (id: number, src: string, caughtWidth: number, rtl: boolean, power: number) => void, onComplete: (id: number) => void }) {
+  const ref = useRef<HTMLDivElement>(null);
   
   useAnimationFrame(() => {
     if (hookState.current.state === 'waiting' || hookState.current.state === 'dropping') {
@@ -160,22 +160,31 @@ function Fish({ data, hookState, onCatch }: { data: ActiveFishType, hookState: R
   });
 
   return (
-    <motion.img
+    <motion.div
       ref={ref}
-      src={data.src}
-      className="absolute object-contain drop-shadow-lg z-[5]"
+      className="absolute z-[5]"
       style={{ 
         top: `${data.top}%`, 
         width: `${data.size}px`,
-        scaleX: isFacingRightDefault(data.src) ? (data.rtl ? -1 : 1) : (data.rtl ? 1 : -1) 
       }}
-      initial={{ left: data.rtl ? '110%' : '-10%', y: 0 }}
-      animate={{ left: data.rtl ? '-10%' : '110%', y: [0, -data.bobHeight, 0, data.bobHeight, 0] }}
+      initial={{ left: data.rtl ? '110%' : '-10%' }}
+      animate={{ left: data.rtl ? '-10%' : '110%' }}
       transition={{
-        left: { duration: data.duration, repeat: Infinity, ease: "linear", delay: data.initialDelay },
-        y: { duration: data.duration / 4, repeat: Infinity, ease: "easeInOut", delay: data.initialDelay }
+        left: { duration: data.duration, ease: "linear", delay: data.initialDelay }
       }}
-    />
+      onAnimationComplete={() => onComplete(data.id)}
+    >
+      <motion.img
+        src={data.src}
+        className="w-full h-full object-contain drop-shadow-lg"
+        style={{ scaleX: isFacingRightDefault(data.src) ? (data.rtl ? -1 : 1) : (data.rtl ? 1 : -1) }}
+        initial={{ y: 0 }}
+        animate={{ y: [0, -data.bobHeight, 0, data.bobHeight, 0] }}
+        transition={{
+          y: { duration: data.duration / 4, repeat: Infinity, ease: "easeInOut", delay: data.initialDelay }
+        }}
+      />
+    </motion.div>
   );
 }
 
@@ -356,6 +365,13 @@ export default function App() {
     }, 5000 + Math.random() * 5000);
   }, [reelIn]);
 
+  const handleFishComplete = useCallback((id: number) => {
+    setActiveFishes(prev => {
+       const filtered = prev.filter(f => f.id !== id);
+       return [...filtered, createRandomFish(Date.now() + Math.random(), 0)];
+    });
+  }, []);
+
   const handleScreenClick = (e: React.MouseEvent) => {
     if (inventoryOpen) {
       setInventoryOpen(false);
@@ -404,7 +420,7 @@ export default function App() {
       {mounted && (
         <>
           {activeFishes.map(data => (
-            <Fish key={data.id} data={data} hookState={hookState} onCatch={handleCatch} />
+            <Fish key={data.id} data={data} hookState={hookState} onCatch={handleCatch} onComplete={handleFishComplete} />
           ))}
         </>
       )}
