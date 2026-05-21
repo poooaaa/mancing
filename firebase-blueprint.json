@@ -1,0 +1,36 @@
+{
+  "entities": {
+    "UserStats": {
+      "title": "User Stats",
+      "description": "User inventory and total power",
+      "type": "object",
+      "properties": {
+        "inventory": {
+          "type": "array",
+          "description": "Array of fish objects"
+        },
+        "totalPower": {
+          "type": "number"
+        },
+        "questStage": {
+          "type": "number"
+        },
+        "epicFishesCaught": {
+          "type": "number"
+        },
+        "mythicFishesReleased": {
+          "type": "number"
+        },
+        "updatedAt": {
+          "type": "timestamp"
+        }
+      }
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "UserStats",
+      "description": "User specific data"
+    }
+  }
+}
