@@ -4,7 +4,7 @@
  */
 
 import { motion, AnimatePresence, useMotionValue, useAnimationFrame, useMotionValueEvent, animate } from "motion/react";
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Package, X, Trash2, Flame, Backpack, LogIn, Target, ScrollText, CheckCircle2, ChevronRight, Lock } from "lucide-react";
 import { auth, db, googleProvider } from "./firebase";
 import { signInWithPopup, User, onAuthStateChanged } from "firebase/auth";
@@ -144,7 +144,7 @@ const generateInitialFishes = (): ActiveFishType[] => {
   return fishes;
 };
 
-function Fish({ data, hookState, onCatch }: { key?: React.Key; data: ActiveFishType, hookState: React.MutableRefObject<any>, onCatch: (id: number, src: string, caughtWidth: number, rtl: boolean, power: number) => void }) {
+function Fish({ data, hookState, onCatch }: { data: ActiveFishType, hookState: React.MutableRefObject<any>, onCatch: (id: number, src: string, caughtWidth: number, rtl: boolean, power: number) => void }) {
   const ref = useRef<HTMLImageElement>(null);
   
   useAnimationFrame(() => {
@@ -181,7 +181,7 @@ function Fish({ data, hookState, onCatch }: { key?: React.Key; data: ActiveFishT
   );
 }
 
-function ClickEffect({ x, y }: { key?: React.Key; x: number; y: number }) {
+function ClickEffect({ x, y }: { x: number; y: number }) {
   return (
     <>
       <motion.div
@@ -527,13 +527,7 @@ export default function App() {
                 <p className="text-white/70 text-sm leading-relaxed">Catch rare fishes, build your collection, and compete for the highest power.</p>
               </div>
               <button 
-                onClick={async () => {
-                  try {
-                    await signInWithPopup(auth, googleProvider);
-                  } catch (error: any) {
-                    console.error("Login failed:", error);
-                  }
-                }}
+                onClick={() => signInWithPopup(auth, googleProvider)}
                 className="w-full py-3.5 px-6 rounded-2xl bg-white text-black font-semibold tracking-wide hover:bg-gray-100 transition-colors shadow-[0_4px_16px_rgba(255,255,255,0.3)] hover:shadow-[0_4px_24px_rgba(255,255,255,0.4)] flex items-center justify-center gap-3"
               >
                 <LogIn className="w-5 h-5" />
@@ -591,21 +585,11 @@ export default function App() {
         />
       </div>
 
-      {/* Deep Sea Ambient Effects */}
-      <div className="absolute inset-0 z-[20] pointer-events-none bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-cyan-200/40 via-blue-900/30 to-transparent opacity-80 mix-blend-overlay" />
-      <div className="absolute inset-0 z-[20] pointer-events-none bg-gradient-to-b from-transparent via-cyan-900/30 to-blue-950/90" />
-      <div className="absolute inset-0 z-[20] pointer-events-none bg-teal-950/20 mix-blend-color" />
-      
-      {/* Underwater Fog Depth */}
-      <div className="absolute inset-0 z-[20] pointer-events-none backdrop-blur-[6px]" style={{ maskImage: 'linear-gradient(to bottom, transparent 30%, black 100%)', WebkitMaskImage: 'linear-gradient(to bottom, transparent 30%, black 100%)' }} />
-      
-      {/* Light Rays / Caustics */}
-      <div className="absolute inset-0 z-[21] pointer-events-none bg-gradient-to-b from-white/15 to-transparent mix-blend-overlay" style={{ maskImage: 'repeating-linear-gradient(15deg, transparent, transparent 4%, black 7%, transparent 10%)', opacity: 0.5 }} />
-      <div className="absolute inset-0 z-[21] pointer-events-none bg-gradient-to-b from-white/10 to-transparent mix-blend-overlay" style={{ maskImage: 'repeating-linear-gradient(-25deg, transparent, transparent 5%, black 8%, transparent 12%)', opacity: 0.4 }} />
-      
-      {/* Vignette Frame */}
-      <div className="absolute inset-0 z-[22] pointer-events-none bg-[radial-gradient(circle_at_center,transparent_30%,rgba(0,10,30,0.7)_150%)]" />
-      <div className="absolute inset-0 z-[22] pointer-events-none border-[12px] border-black/30 rounded-[2rem] opacity-50 mix-blend-overlay" />
+      <div className="absolute inset-0 z-[20] pointer-events-none bg-cyan-800/20 mix-blend-overlay" />
+      <div className="absolute inset-0 z-[20] pointer-events-none bg-gradient-to-t from-blue-950/90 via-sky-800/30 to-teal-800/10" />
+      <div className="absolute inset-0 z-[20] pointer-events-none backdrop-blur-[3px] opacity-70" />
+      <div className="absolute inset-0 z-[21] pointer-events-none bg-gradient-to-b from-white/10 to-transparent mix-blend-overlay" style={{ maskImage: 'repeating-linear-gradient(to right, transparent, transparent 10%, black 15%, transparent 20%)', opacity: 0.3 }} />
+      <div className="absolute inset-0 z-[21] pointer-events-none border-[16px] border-black/20 rounded-[2rem] opacity-50 mix-blend-overlay" />
 
 
 
