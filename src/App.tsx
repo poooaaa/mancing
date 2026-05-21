@@ -7,7 +7,7 @@ import { motion, AnimatePresence, useMotionValue, useAnimationFrame, useMotionVa
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Package, X, Trash2, Flame, Backpack, LogIn, Target, ScrollText, CheckCircle2, ChevronRight, Lock } from "lucide-react";
 import { auth, db, googleProvider } from "./firebase";
-import { signInWithPopup, User, onAuthStateChanged } from "firebase/auth";
+import { signInWithPopup, signInWithRedirect, User, onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 
 const FISH_BASIC = [
@@ -61,6 +61,43 @@ const getRandomFishSrc = () => {
         // 45% chance for Basic (55 - 100)
         return FISH_BASIC[Math.floor(Math.random() * FISH_BASIC.length)];
     }
+};
+
+const Bubbles = () => {
+  const [windowHeight, setWindowHeight] = useState(1000);
+  useEffect(() => {
+    if (typeof window !== 'undefined') setWindowHeight(window.innerHeight);
+  }, []);
+
+  return (
+    <div className="absolute inset-0 z-[19] overflow-hidden pointer-events-none">
+      {Array.from({ length: 15 }).map((_, i) => {
+        const left = `${Math.random() * 100}%`;
+        const size = Math.random() * 8 + 4;
+        const delay = Math.random() * 5;
+        const duration = Math.random() * 6 + 10;
+        return (
+          <motion.div
+            key={i}
+            className="absolute bottom-[-20px] rounded-full border border-white/40 bg-zinc-100/10"
+            style={{ left, width: size, height: size }}
+            initial={{ y: 0, opacity: 0 }}
+            animate={{ 
+                y: -windowHeight - 100, 
+                opacity: [0, 0.8, 0.8, 0],
+                x: [0, Math.random() * 60 - 30, Math.random() * -60 + 30, 0] 
+            }}
+            transition={{
+              duration,
+              repeat: Infinity,
+              delay,
+              ease: 'linear'
+            }}
+          />
+        );
+      })}
+    </div>
+  );
 };
 
 function getFishRarity(src: string): 'basic' | 'rare' | 'epic' | 'legendary' | 'mythic' {
@@ -431,7 +468,12 @@ export default function App() {
             
             <div className="flex items-center gap-2">
               <button
-                className="relative p-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 transition-all hover:scale-105 active:scale-95 flex items-center justify-center pointer-events-auto cursor-pointer shadow-sm group overflow-hidden"
+                className="relative p-2.5 rounded-xl border-white/20 transition-all hover:scale-105 active:scale-95 flex items-center justify-center pointer-events-auto cursor-pointer shadow-sm group overflow-hidden w-[42px] h-[42px]"
+                style={{
+                  background: 'linear-gradient(to bottom right, rgba(255,255,255,0.1), rgba(255,255,255,0.05))',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.2)'
+                }}
                 onClick={async (e) => {
                   e.stopPropagation();
                   if (isQuestsLoading) return;
@@ -456,16 +498,20 @@ export default function App() {
                   setQuestsOpen(true);
                 }}
               >
-                {isQuestsLoading && (
-                  <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-                    <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                  </div>
+                {isQuestsLoading ? (
+                  <div className="w-5 h-5 border-[3px] border-white/20 border-t-yellow-400 rounded-full animate-spin shadow-[0_0_8px_rgba(250,204,21,0.5)]" />
+                ) : (
+                  <Target className="w-5 h-5 text-white/90 drop-shadow-[0_2px_4px_rgba(0,0,0,1)] group-hover:scale-110 transition-transform" />
                 )}
-                <Target className={`w-5 h-5 text-white/90 drop-shadow-[0_2px_4px_rgba(0,0,0,1)] ${isQuestsLoading ? 'opacity-50' : ''} group-hover:scale-110 transition-transform`} />
               </button>
 
               <button
-                className="relative p-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 transition-all hover:scale-105 active:scale-95 flex items-center justify-center pointer-events-auto cursor-pointer shadow-sm group overflow-hidden"
+                className="relative p-2.5 rounded-xl border-white/20 transition-all hover:scale-105 active:scale-95 flex items-center justify-center pointer-events-auto cursor-pointer shadow-sm group overflow-hidden w-[42px] h-[42px]"
+                style={{
+                  background: 'linear-gradient(to bottom right, rgba(255,255,255,0.1), rgba(255,255,255,0.05))',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.2)'
+                }}
                 onClick={async (e) => {
                   e.stopPropagation();
                   if (isInvLoading) return;
@@ -486,12 +532,11 @@ export default function App() {
                   setInventoryOpen(true);
                 }}
               >
-                {isInvLoading && (
-                  <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-                    <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                  </div>
+                {isInvLoading ? (
+                  <div className="w-5 h-5 border-[3px] border-white/20 border-t-blue-400 rounded-full animate-spin shadow-[0_0_8px_rgba(96,165,250,0.5)]" />
+                ) : (
+                  <Backpack className="w-5 h-5 text-white/90 drop-shadow-[0_2px_4px_rgba(0,0,0,1)] group-hover:scale-110 transition-transform" />
                 )}
-                <Backpack className={`w-5 h-5 text-white/90 drop-shadow-[0_2px_4px_rgba(0,0,0,1)] ${isInvLoading ? 'opacity-50' : ''} group-hover:scale-110 transition-transform`} />
               </button>
             </div>
           </div>
@@ -527,7 +572,14 @@ export default function App() {
                 <p className="text-white/70 text-sm leading-relaxed">Catch rare fishes, build your collection, and compete for the highest power.</p>
               </div>
               <button 
-                onClick={() => signInWithPopup(auth, googleProvider)}
+                onClick={async () => {
+                  try {
+                    await signInWithPopup(auth, googleProvider);
+                  } catch (err: any) {
+                    console.error("Popup failed, trying redirect:", err);
+                    await signInWithRedirect(auth, googleProvider);
+                  }
+                }}
                 className="w-full py-3.5 px-6 rounded-2xl bg-white text-black font-semibold tracking-wide hover:bg-gray-100 transition-colors shadow-[0_4px_16px_rgba(255,255,255,0.3)] hover:shadow-[0_4px_24px_rgba(255,255,255,0.4)] flex items-center justify-center gap-3"
               >
                 <LogIn className="w-5 h-5" />
@@ -585,6 +637,7 @@ export default function App() {
         />
       </div>
 
+      <Bubbles />
       <div className="absolute inset-0 z-[20] pointer-events-none bg-cyan-800/20 mix-blend-overlay" />
       <div className="absolute inset-0 z-[20] pointer-events-none bg-gradient-to-t from-blue-950/90 via-sky-800/30 to-teal-800/10" />
       <div className="absolute inset-0 z-[20] pointer-events-none backdrop-blur-[3px] opacity-70" />
