@@ -6,10 +6,7 @@
 import { motion, AnimatePresence, useMotionValue, useAnimationFrame, useMotionValueEvent, animate } from "motion/react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Package, X, Trash2, Flame, Backpack, LogIn, Target, ScrollText, CheckCircle2, ChevronRight, Lock } from "lucide-react";
-import { auth, db, googleProvider } from "./firebase";
-import { signInWithCredential, User, onAuthStateChanged, GoogleAuthProvider } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { GoogleLogin } from '@react-oauth/google';
+
 
 const FISH_BASIC = [
   "https://www.cloudsky.biz.id/api/file/ikan1.png",
@@ -222,7 +219,7 @@ export default function App() {
   const [clicks, setClicks] = useState<{id: number, x: number, y: number}[]>([]);
   const [inventoryOpen, setInventoryOpen] = useState(false);
   
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<{ uid: string, photoURL?: string } | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
   const [deleteCandidate, setDeleteCandidate] = useState<number | null>(null);
@@ -253,17 +250,17 @@ export default function App() {
   const totalPower = inventory.reduce((total, item) => total + (item ? item.power : 0), 0);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (u) => {
-      setUser(u);
-      if (u) {
+    const storedUser = localStorage.getItem('fishItsUser');
+    if (storedUser) {
+        setUser(JSON.parse(storedUser));
+        
         try {
-          const docRef = doc(db, "users", u.uid);
-          const docSnap = await getDoc(docRef);
-          if (docSnap.exists()) {
-             const data = docSnap.data();
+          const saveStr = localStorage.getItem(`fishItsSave_${JSON.parse(storedUser).uid}`);
+          if (saveStr) {
+             const data = JSON.parse(saveStr);
              if (data.inventory && Array.isArray(data.inventory)) {
                  const newInv = Array(16).fill(null);
-                 data.inventory.forEach((item, i) => {
+                 data.inventory.forEach((item: any, i: number) => {
                      if (item && i < 16) {
                          newInv[i] = item;
                      }
@@ -277,28 +274,25 @@ export default function App() {
         } catch(e) {
           console.error(e);
         }
-      } else {
+    } else {
         setInventory(Array(16).fill(null));
         setQuestStage(1);
         setEpicFishesCaught(0);
         setMythicFishesReleased(0);
-      }
-      setAuthLoading(false);
-    });
-    return () => unsub();
+    }
+    setAuthLoading(false);
   }, []);
 
   useEffect(() => {
     if (user && !authLoading) {
-       const userDoc = doc(db, "users", user.uid);
-       setDoc(userDoc, {
+       localStorage.setItem(`fishItsSave_${user.uid}`, JSON.stringify({
          inventory,
          totalPower,
          questStage,
          epicFishesCaught,
          mythicFishesReleased,
-         updatedAt: new Date()
-       }, { merge: true }).catch(console.error);
+         updatedAt: Date.now()
+       }));
     }
   }, [inventory, user, authLoading, totalPower, questStage, epicFishesCaught, mythicFishesReleased]);
 
@@ -457,13 +451,12 @@ export default function App() {
                   setQuestsOpen(true);
                 }}
               >
-                {isQuestsLoading ? (
-                  <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-sm rounded-xl">
+                {isQuestsLoading && (
+                  <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-sm">
                     <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
                   </div>
-                ) : (
-                  <Target className="w-5 h-5 text-white/90 drop-shadow-[0_2px_4px_rgba(0,0,0,1)] group-hover:scale-110 transition-transform" />
                 )}
+                <Target className={`w-5 h-5 text-white/90 drop-shadow-[0_2px_4px_rgba(0,0,0,1)] ${isQuestsLoading ? 'opacity-50' : ''} group-hover:scale-110 transition-transform`} />
               </button>
 
               <button
@@ -488,13 +481,12 @@ export default function App() {
                   setInventoryOpen(true);
                 }}
               >
-                {isInvLoading ? (
-                  <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-sm rounded-xl">
+                {isInvLoading && (
+                  <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-sm">
                     <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
                   </div>
-                ) : (
-                  <Backpack className="w-5 h-5 text-white/90 drop-shadow-[0_2px_4px_rgba(0,0,0,1)] group-hover:scale-110 transition-transform" />
                 )}
+                <Backpack className={`w-5 h-5 text-white/90 drop-shadow-[0_2px_4px_rgba(0,0,0,1)] ${isInvLoading ? 'opacity-50' : ''} group-hover:scale-110 transition-transform`} />
               </button>
             </div>
           </div>
@@ -529,27 +521,17 @@ export default function App() {
                 <h2 className="text-2xl font-bold text-white mb-2">Welcome</h2>
                 <p className="text-white/70 text-sm leading-relaxed">Catch rare fishes, build your collection, and compete for the highest power.</p>
               </div>
-              
-              <div className="flex justify-center w-full">
-                <GoogleLogin
-                  onSuccess={(credentialResponse) => {
-                    if (credentialResponse.credential) {
-                      const credential = GoogleAuthProvider.credential(credentialResponse.credential);
-                      signInWithCredential(auth, credential).catch((error) => {
-                        console.error("Firebase auth error:", error);
-                        alert("Failed to sign in. Please try again.");
-                      });
-                    }
-                  }}
-                  onError={() => {
-                    console.error('Login Failed');
-                  }}
-                  theme="filled_black"
-                  shape="pill"
-                  size="large"
-                  text="continue_with"
-                />
-              </div>
+              <button 
+                onClick={() => {
+                  const localUser = { uid: "localUser1" };
+                  localStorage.setItem('fishItsUser', JSON.stringify(localUser));
+                  setUser(localUser);
+                }}
+                className="w-full py-3.5 px-6 rounded-2xl bg-white text-black font-semibold tracking-wide hover:bg-gray-100 transition-colors shadow-[0_4px_16px_rgba(255,255,255,0.3)] hover:shadow-[0_4px_24px_rgba(255,255,255,0.4)] flex items-center justify-center gap-3"
+              >
+                <LogIn className="w-5 h-5" />
+                <span>Continue with Game</span>
+              </button>
             </motion.div>
           </motion.div>
         )}
@@ -602,34 +584,11 @@ export default function App() {
         />
       </div>
 
-      {/* Underwater Background Effects */}
-      <div className="absolute inset-0 z-[20] pointer-events-none bg-cyan-900/30 mix-blend-color animate-water" />
-      <div className="absolute inset-0 z-[20] pointer-events-none bg-gradient-to-t from-blue-950 via-sky-900/60 to-teal-800/30 mix-blend-multiply opacity-80" />
-      
-      {/* Fog and Blur for Depth */}
-      <div className="absolute inset-0 z-[20] pointer-events-none backdrop-blur-[4px] opacity-80" />
-      <div className="absolute inset-0 z-[21] pointer-events-none bg-[radial-gradient(ellipse_at_center,_transparent_0%,_rgba(0,10,30,0.8)_100%)] opacity-90" />
-      
-      {/* Light Rays / Sunbeams */}
-      <div className="absolute inset-0 z-[21] pointer-events-none bg-gradient-to-b from-cyan-100/30 to-transparent mix-blend-overlay animate-sway-1" style={{ maskImage: 'repeating-linear-gradient(to right, transparent, transparent 15%, black 20%, transparent 25%)', opacity: 0.6 }} />
-      <div className="absolute inset-0 z-[21] pointer-events-none bg-gradient-to-b from-teal-100/20 to-transparent mix-blend-overlay animate-sway-2" style={{ maskImage: 'repeating-linear-gradient(to left, transparent, transparent 10%, black 15%, transparent 20%)', opacity: 0.5 }} />
-
-      {/* Floating Bubbles */}
-      <div className="absolute inset-0 z-[22] pointer-events-none overflow-hidden">
-        {[...Array(15)].map((_, i) => (
-          <div 
-            key={`bubble-${i}`}
-            className="absolute rounded-full border border-white/40 bg-white/10 backdrop-blur-sm"
-            style={{
-              left: `${Math.random() * 100}%`,
-              width: `${Math.random() * 10 + 4}px`,
-              height: `${Math.random() * 10 + 4}px`,
-              animation: `bubble-float ${Math.random() * 8 + 4}s ease-in infinite`,
-              animationDelay: `${Math.random() * -10}s`
-            }}
-          />
-        ))}
-      </div>
+      <div className="absolute inset-0 z-[20] pointer-events-none bg-cyan-800/20 mix-blend-overlay" />
+      <div className="absolute inset-0 z-[20] pointer-events-none bg-gradient-to-t from-blue-950/90 via-sky-800/30 to-teal-800/10" />
+      <div className="absolute inset-0 z-[20] pointer-events-none backdrop-blur-[3px] opacity-70" />
+      <div className="absolute inset-0 z-[21] pointer-events-none bg-gradient-to-b from-white/10 to-transparent mix-blend-overlay" style={{ maskImage: 'repeating-linear-gradient(to right, transparent, transparent 10%, black 15%, transparent 20%)', opacity: 0.3 }} />
+      <div className="absolute inset-0 z-[21] pointer-events-none border-[16px] border-black/20 rounded-[2rem] opacity-50 mix-blend-overlay" />
 
 
 
